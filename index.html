@@ -1,0 +1,802 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ASHOKA | ATCD DFA Email Validator</title>
+
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+
+<style>
+:root {
+  --green:#123f32;
+  --deep:#092a22;
+  --mint:#d9eee2;
+  --cream:#f8f5eb;
+  --copper:#c77d45;
+  --ink:#20352d;
+  --muted:#718078;
+  --red:#a63f42;
+  --line:#dce5dc;
+}
+
+* { box-sizing:border-box; }
+
+body {
+  margin:0;
+  background:linear-gradient(135deg,#eef4e9,#fbf6e9 55%,#e2eee6);
+  color:var(--ink);
+  font-family:Inter,"Segoe UI",Arial,sans-serif;
+}
+
+.top {
+  background:linear-gradient(115deg,var(--deep),var(--green));
+  color:white;
+  padding:28px max(22px,calc((100% - 1120px)/2));
+  border-bottom:5px solid var(--copper);
+}
+
+.brand { display:flex; align-items:center; gap:14px; }
+
+.seal {
+  width:54px;
+  height:54px;
+  border:2px solid #e0b27d;
+  border-radius:50%;
+  display:grid;
+  place-items:center;
+  color:#f4d7a9;
+  font-size:25px;
+  font-weight:800;
+  flex-shrink:0;
+}
+
+.eyebrow {
+  font-size:11px;
+  letter-spacing:2.4px;
+  color:#e4bd8b;
+  font-weight:800;
+}
+
+.top h1 { font-size:clamp(24px,4vw,38px); margin:5px 0; }
+.top p { margin:8px 0 0; color:#d5e7dc; }
+
+.wrap { max-width:1120px; margin:26px auto; padding:0 18px; }
+
+.intro {
+  display:flex;
+  justify-content:space-between;
+  gap:18px;
+  align-items:center;
+  flex-wrap:wrap;
+  margin-bottom:18px;
+}
+
+.intro h2 { margin:0 0 6px; color:var(--green); }
+.intro p { margin:0; color:var(--muted); }
+
+.domain {
+  background:#fff;
+  border:1px solid #d5e3d8;
+  padding:10px 14px;
+  border-radius:999px;
+  color:var(--green);
+  font-weight:800;
+  overflow-wrap:anywhere;
+}
+
+.stats {
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  gap:12px;
+  margin:18px 0;
+}
+
+.stat,.panel {
+  background:#fffdf8;
+  border:1px solid var(--line);
+  border-radius:18px;
+  box-shadow:0 10px 30px #183d2c0b;
+}
+
+.stat { padding:16px 18px; }
+
+.stat span {
+  font-size:12px;
+  color:var(--muted);
+  text-transform:uppercase;
+  letter-spacing:1px;
+}
+
+.stat strong {
+  display:block;
+  font-size:28px;
+  margin-top:5px;
+  color:var(--green);
+}
+
+.layout {
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:16px;
+}
+
+.panel { padding:22px; }
+.panel h3 { margin:0 0 7px; color:var(--green); }
+
+.sub {
+  font-size:13px;
+  color:var(--muted);
+  margin:0 0 16px;
+  line-height:1.5;
+}
+
+textarea,input[type=email],input[type=file] {
+  width:100%;
+  padding:13px;
+  border:1px solid #cbd9ce;
+  border-radius:11px;
+  background:#fff;
+  font:inherit;
+  color:var(--ink);
+}
+
+textarea { min-height:110px; resize:vertical; }
+
+button {
+  border:0;
+  border-radius:10px;
+  padding:12px 16px;
+  font-weight:800;
+  cursor:pointer;
+  transition:.18s;
+}
+
+button:hover { transform:translateY(-1px); filter:brightness(1.03); }
+button:focus-visible { outline:3px solid var(--copper); outline-offset:3px; }
+
+.primary { background:var(--green); color:#fff; }
+.secondary { background:var(--mint); color:var(--green); }
+.copper { background:var(--copper); color:#fff; }
+.danger { background:var(--red); color:#fff; }
+
+.btnrow {
+  display:flex;
+  gap:9px;
+  flex-wrap:wrap;
+  margin-top:12px;
+}
+
+.hint { font-size:12px; color:var(--muted); margin-top:9px; }
+
+.tracebox {
+  margin-top:16px;
+  background:#f5f8f2;
+  border:1px solid var(--line);
+  border-radius:12px;
+  padding:14px;
+  min-height:84px;
+}
+
+.tracebox b { color:var(--green); }
+
+.trace { display:flex; gap:5px; flex-wrap:wrap; margin-top:10px; }
+
+.char {
+  min-width:30px;
+  padding:8px 6px;
+  text-align:center;
+  border-radius:7px;
+  border:1px solid #c9d9ce;
+  background:white;
+  font-weight:700;
+  overflow-wrap:anywhere;
+}
+
+.char.ok { background:#d8f0df; border-color:#79bd8d; }
+.char.bad { background:#fbe1e0; border-color:#d78b8b; }
+
+.statepath {
+  font-family:ui-monospace,Consolas,monospace;
+  font-size:12px;
+  line-height:1.8;
+  overflow-wrap:anywhere;
+  white-space:pre-wrap;
+  margin-top:8px;
+}
+
+.results-head {
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+  flex-wrap:wrap;
+  margin-top:24px;
+}
+
+.results-head h3 { color:var(--green); }
+
+.tablewrap { overflow:auto; margin-top:16px; }
+
+table {
+  width:100%;
+  border-collapse:collapse;
+  background:#fffdf8;
+  border-radius:12px;
+  overflow:hidden;
+}
+
+th,td {
+  padding:12px 13px;
+  text-align:left;
+  border-bottom:1px solid #e6ece5;
+  font-size:13px;
+}
+
+th {
+  background:#eaf2e9;
+  color:var(--green);
+  font-size:11px;
+  letter-spacing:.8px;
+  text-transform:uppercase;
+}
+
+.pill {
+  display:inline-block;
+  padding:5px 9px;
+  border-radius:999px;
+  font-size:11px;
+  font-weight:800;
+}
+
+.accepted { background:#d9f2df; color:#1d6b3c; }
+.rejected { background:#f9e0df; color:#9a3035; }
+
+.empty { text-align:center; padding:28px; color:var(--muted); }
+
+.footer { text-align:center; color:var(--muted); font-size:12px; padding:25px; }
+
+.filelabel {
+  display:block;
+  font-size:13px;
+  font-weight:700;
+  margin:12px 0 7px;
+}
+
+.notice { font-size:12px; color:var(--muted); margin-top:12px; line-height:1.5; }
+
+.download-panel { margin-top:20px; }
+.download-panel h3 { color:var(--green); margin-top:0; }
+
+.download-info {
+  color:var(--muted);
+  font-size:13px;
+  line-height:1.6;
+}
+
+.download-buttons {
+  display:flex;
+  gap:10px;
+  flex-wrap:wrap;
+  margin-top:14px;
+}
+
+@media(max-width:760px) {
+  .layout { grid-template-columns:1fr; }
+  .stats { gap:8px; }
+  .stat { padding:12px; }
+  .stat strong { font-size:23px; }
+  .top { padding-top:22px; padding-bottom:22px; }
+  .download-buttons button { width:100%; }
+}
+</style>
+</head>
+
+<body>
+
+<header class="top">
+  <div class="brand">
+    <div class="seal">A</div>
+    <div>
+      <div class="eyebrow">ASHOKA COLLEGE · ATCD PROJECT</div>
+      <h1>DFA Email Validator</h1>
+      <p>Deterministic Finite Automaton · Email domain verification</p>
+    </div>
+  </div>
+</header>
+
+<main class="wrap">
+
+  <div class="intro">
+    <div>
+      <h2>Validate. Trace. Accept.</h2>
+      <p>Check emails and inspect the DFA-style character-by-character journey.</p>
+    </div>
+    <div class="domain">Required domain: @ashokacollege.in</div>
+  </div>
+
+  <section class="stats">
+    <div class="stat">
+      <span>Total checked</span>
+      <strong id="total">0</strong>
+    </div>
+    <div class="stat">
+      <span>Accepted</span>
+      <strong id="acceptedCount">0</strong>
+    </div>
+    <div class="stat">
+      <span>Rejected</span>
+      <strong id="rejectedCount">0</strong>
+    </div>
+  </section>
+
+  <div class="layout">
+
+    <section class="panel">
+      <h3>01 / Single Email</h3>
+      <p class="sub">Enter one email to see its DFA-style trace. The college domain must match exactly.</p>
+
+      <label class="filelabel" for="singleEmail">Email address</label>
+      <input id="singleEmail" type="email" placeholder="student@ashokacollege.in">
+
+      <div class="btnrow">
+        <button class="primary" id="validateBtn">Run DFA Validation</button>
+        <button class="secondary" id="clearBtn">Clear</button>
+      </div>
+
+      <div class="tracebox" aria-live="polite">
+        <b id="traceTitle">DFA trace will appear here</b>
+        <div id="traceChars" class="trace"></div>
+        <div id="statePath" class="statepath"></div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h3>02 / Bulk Validation</h3>
+      <p class="sub">Upload a CSV, TXT, XLS or XLSX file, or paste multiple email addresses.</p>
+
+      <label class="filelabel" for="fileInput">Choose file</label>
+      <input id="fileInput" type="file" accept=".csv,.txt,.xls,.xlsx">
+
+      <label class="filelabel" for="bulkText">Or paste email list</label>
+      <textarea id="bulkText" placeholder="student1@ashokacollege.in&#10;student2@example.com"></textarea>
+
+      <div class="btnrow">
+        <button class="primary" id="bulkBtn">Validate List</button>
+        <button class="secondary" id="clearBulk">Clear List</button>
+      </div>
+
+      <p class="notice">
+        Spreadsheet emails are read from the first worksheet.
+        Download accepted and rejected addresses separately, or download all results.
+      </p>
+    </section>
+
+  </div>
+
+  <section class="panel download-panel">
+    <h3>03 / Download Results</h3>
+    <p class="download-info">
+      Validate emails first, then select the file you want to download.
+      Each CSV contains the email address, validation result and reason.
+    </p>
+
+    <div class="download-buttons">
+      <button class="primary" id="downloadAcceptedBtn">
+        Download Accepted Emails (CSV)
+      </button>
+
+      <button class="danger" id="downloadRejectedBtn">
+        Download Rejected Emails (CSV)
+      </button>
+
+      <button class="copper" id="downloadAllBtn">
+        Download All Results (CSV)
+      </button>
+    </div>
+  </section>
+
+  <div class="results-head">
+    <h3>Validation Results</h3>
+  </div>
+
+  <div class="tablewrap">
+    <table>
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Email</th>
+          <th>DFA Result</th>
+          <th>Reason</th>
+        </tr>
+      </thead>
+      <tbody id="resultsBody">
+        <tr>
+          <td colspan="4" class="empty">No emails checked yet. Start by validating an email above.</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+</main>
+
+<footer class="footer">
+  ASHOKA COLLEGE · ATCD · DFA Email Validation Demonstration
+</footer>
+
+<script>
+const DOMAIN = '@ashokacollege.in';
+let results = [];
+
+const $ = id => document.getElementById(id);
+
+// Validate a single email address
+function checkEmail(raw) {
+  const email = String(raw ?? '').trim();
+
+  if (!email) {
+    return { email, valid:false, reason:'Empty value' };
+  }
+
+  const at = email.lastIndexOf('@');
+
+  if (at < 1) {
+    return {
+      email,
+      valid:false,
+      reason:'Missing username or @ symbol'
+    };
+  }
+
+  const local = email.slice(0, at);
+  const domain = email.slice(at);
+
+  if (domain.toLowerCase() !== DOMAIN) {
+    return {
+      email,
+      valid:false,
+      reason:'Domain must be exactly ' + DOMAIN
+    };
+  }
+
+  const usernamePattern =
+    /^[A-Za-z0-9_%+-]+(?:\.[A-Za-z0-9_%+-]+)*$/;
+
+  if (local.length > 64 || !usernamePattern.test(local)) {
+    return {
+      email,
+      valid:false,
+      reason:'Invalid username syntax'
+    };
+  }
+
+  if (email.length > 254) {
+    return {
+      email,
+      valid:false,
+      reason:'Email is too long'
+    };
+  }
+
+  return {
+    email,
+    valid:true,
+    reason:'Domain and syntax accepted'
+  };
+}
+
+// Escape HTML before displaying imported email values
+function escapeHtml(value) {
+  return String(value).replace(/[&<>"']/g, char => ({
+    '&':'&amp;',
+    '<':'&lt;',
+    '>':'&gt;',
+    '"':'&quot;',
+    "'":'&#39;'
+  })[char]);
+}
+
+// Show a DFA-style trace for a single email
+function drawTrace(raw) {
+  const email = String(raw ?? '').trim();
+  const result = checkEmail(email);
+  const box = $('traceChars');
+
+  $('traceTitle').textContent = result.valid
+    ? 'ACCEPTED — final state qA'
+    : 'REJECTED — final state qR';
+
+  box.replaceChildren();
+
+  [...email].forEach((char, index) => {
+    const span = document.createElement('span');
+    span.className = 'char ' + (result.valid ? 'ok' : 'bad');
+    span.title = 'Character ' + (index + 1);
+    span.textContent = char === ' ' ? '␠' : char;
+    box.appendChild(span);
+  });
+
+  const at = email.lastIndexOf('@');
+  let path = 'q0';
+
+  for (let i = 0; i < email.length; i++) {
+    if (i === at) {
+      path += ' → q@';
+    } else if (i > at) {
+      path += ' → ' + (result.valid ? 'qD' : 'qR');
+    } else {
+      path += ' → qU';
+    }
+  }
+
+  path += ' → ' + (result.valid ? 'qA (ACCEPT)' : 'qR (REJECT)');
+
+  $('statePath').textContent =
+    'Input: ' + (email || '(empty)') +
+    '\nDFA path: ' + path +
+    '\nReason: ' + result.reason;
+}
+
+// Validate a list of emails and update the results
+function addEmails(list) {
+  const cleaned = list
+    .map(value => String(value ?? '').trim())
+    .filter(Boolean);
+
+  if (!cleaned.length) {
+    alert('Please enter or upload at least one email.');
+    return;
+  }
+
+  results = cleaned.map(checkEmail);
+  render();
+}
+
+// Render counts and results table
+function render() {
+  $('total').textContent = results.length;
+  $('acceptedCount').textContent =
+    results.filter(item => item.valid).length;
+  $('rejectedCount').textContent =
+    results.filter(item => !item.valid).length;
+
+  const body = $('resultsBody');
+
+  if (!results.length) {
+    body.innerHTML =
+      '<tr><td colspan="4" class="empty">No emails checked yet.</td></tr>';
+    return;
+  }
+
+  body.innerHTML = results.map((item, index) => `
+    <tr>
+      <td>${index + 1}</td>
+      <td>${escapeHtml(item.email)}</td>
+      <td>
+        <span class="pill ${item.valid ? 'accepted' : 'rejected'}">
+          ${item.valid ? 'ACCEPTED' : 'REJECTED'}
+        </span>
+      </td>
+      <td>${escapeHtml(item.reason)}</td>
+    </tr>
+  `).join('');
+}
+
+// CSV helper: quote cells safely
+function csvCell(value) {
+  return '"' + String(value ?? '').replace(/"/g, '""') + '"';
+}
+
+// Download the supplied rows as a CSV file
+function downloadCSV(rows, filename) {
+  if (!rows.length) {
+    alert('No emails available in this category to download.');
+    return;
+  }
+
+  const header = ['Email', 'Result', 'Reason'];
+
+  const csv = [
+    header.map(csvCell).join(','),
+    ...rows.map(item => [
+      item.email,
+      item.valid ? 'ACCEPTED' : 'REJECTED',
+      item.reason
+    ].map(csvCell).join(','))
+  ].join('\r\n');
+
+  const blob = new Blob(
+    ['\ufeff' + csv],
+    { type:'text/csv;charset=utf-8;' }
+  );
+
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+
+  link.href = url;
+  link.download = filename;
+
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+
+  // Give the browser time to start downloading before cleanup
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+// Single email validation
+$('validateBtn').addEventListener('click', () => {
+  const value = $('singleEmail').value;
+
+  drawTrace(value);
+
+  if (value.trim()) {
+    results = [checkEmail(value)];
+    render();
+  } else {
+    alert('Please enter an email address.');
+  }
+});
+
+$('singleEmail').addEventListener('keydown', event => {
+  if (event.key === 'Enter') {
+    $('validateBtn').click();
+  }
+});
+
+// Clear the single-email section
+$('clearBtn').addEventListener('click', () => {
+  $('singleEmail').value = '';
+  $('traceTitle').textContent = 'DFA trace will appear here';
+  $('traceChars').replaceChildren();
+  $('statePath').textContent = '';
+});
+
+// Validate pasted emails
+$('bulkBtn').addEventListener('click', () => {
+  const text = $('bulkText').value;
+
+  const values = text
+    .split(/[\n,;\t]+/)
+    .map(value => value.trim())
+    .filter(Boolean);
+
+  if (values.length) {
+    addEmails(values);
+    return;
+  }
+
+  if ($('fileInput').files.length) {
+    $('fileInput').dispatchEvent(
+      new Event('change')
+    );
+    return;
+  }
+
+  alert('Paste emails or choose a file first.');
+});
+
+// Clear bulk input
+$('clearBulk').addEventListener('click', () => {
+  $('bulkText').value = '';
+  $('fileInput').value = '';
+});
+
+// DOWNLOAD 1: Accepted emails only
+$('downloadAcceptedBtn').addEventListener('click', () => {
+  if (!results.length) {
+    alert('Please validate emails first.');
+    return;
+  }
+
+  const accepted = results.filter(item => item.valid);
+
+  if (!accepted.length) {
+    alert('No accepted emails available to download.');
+    return;
+  }
+
+  downloadCSV(
+    accepted,
+    'ashoka_atcd_accepted_emails.csv'
+  );
+});
+
+// DOWNLOAD 2: Rejected emails only
+$('downloadRejectedBtn').addEventListener('click', () => {
+  if (!results.length) {
+    alert('Please validate emails first.');
+    return;
+  }
+
+  const rejected = results.filter(item => !item.valid);
+
+  if (!rejected.length) {
+    alert('No rejected emails available to download.');
+    return;
+  }
+
+  downloadCSV(
+    rejected,
+    'ashoka_atcd_rejected_emails.csv'
+  );
+});
+
+// DOWNLOAD 3: Accepted + rejected emails
+$('downloadAllBtn').addEventListener('click', () => {
+  if (!results.length) {
+    alert('Please validate emails first.');
+    return;
+  }
+
+  downloadCSV(
+    results,
+    'ashoka_atcd_all_results.csv'
+  );
+});
+
+// Read uploaded TXT, CSV, XLS and XLSX files
+$('fileInput').addEventListener('change', async event => {
+  const file = event.target.files[0];
+
+  if (!file) return;
+
+  try {
+    let values = [];
+
+    if (/\.txt$/i.test(file.name)) {
+      const text = await file.text();
+      values = text.split(/[\n,;\t]+/);
+
+    } else if (/\.csv$/i.test(file.name)) {
+      const text = await file.text();
+
+      values = text.split(/[\n,;\t]+/).filter(value =>
+        !/^\s*(email|email address)\s*$/i.test(value.trim())
+      );
+
+    } else if (/\.(xlsx|xls)$/i.test(file.name)) {
+      if (!window.XLSX) {
+        throw new Error(
+          'Spreadsheet reader could not load. Check your internet connection.'
+        );
+      }
+
+      const data = await file.arrayBuffer();
+      const workbook = XLSX.read(data, { type:'array' });
+      const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+
+      values = XLSX.utils.sheet_to_json(firstSheet, {
+        header:1,
+        raw:false
+      }).flat();
+
+      values = values.filter(value =>
+        !/^\s*(email|email address)\s*$/i.test(String(value).trim())
+      );
+
+    } else {
+      throw new Error('Unsupported file type.');
+    }
+
+    values = values
+      .map(value => String(value ?? '').trim())
+      .filter(Boolean);
+
+    if (!values.length) {
+      alert('No email addresses found in this file.');
+      return;
+    }
+
+    $('bulkText').value = values.join('\n');
+    addEmails(values);
+
+  } catch (error) {
+    alert('Could not read file: ' + error.message);
+  }
+});
+</script>
+
+</body>
+</html>
